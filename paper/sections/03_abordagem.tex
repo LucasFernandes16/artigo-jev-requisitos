@@ -3,7 +3,7 @@
 \subsection{Análise de Gargalos do Ciclo Reflexivo Base}
 Na implementação de referência de Ro\ss kothen et al.~\cite{rosskothen2026converting, rosskothen2026zenodo}, após a geração inicial produzir $k$ requisitos candidatos $R = \{R_1, \dots, R_k\}$ a partir do requisito fonte $S$, cada iteração do ciclo reflexivo executa:
 \begin{enumerate}
-    \item $k$ chamadas ao \textit{Template Validator} (quando reprovado pela gramática), retransmitindo a especificação completa do formato MASTeR;
+    \item até $k$ chamadas ao \textit{Template Validator} generativo (acionado em configuração híbrida sempre que o analisador gramatical livre de contexto identifica falha estrutural), retransmitindo a especificação completa do formato MASTeR;
     \item $k$ chamadas ao \textit{INCOSE Validator}, gerando notas e comentários textuais para cada uma das 9 categorias (C1--C9) avaliando $R_i$ isoladamente (sem acesso a $S$);
     \item $1$ chamada ao \textit{Feedback Filter}, que confronta os comentários gerados contra $S$ para descartar exigências impossíveis de cumprir sem alucinação (por exemplo, exigir uma tolerância em milissegundos inexistente no texto original).
 \end{enumerate}

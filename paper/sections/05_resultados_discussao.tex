@@ -58,26 +58,26 @@ A Tabela~\ref{tab:jev_results} consolida os resultados quantitativos obtidos pel
 \label{fig:master_f1}
 \end{figure}
 
-\subsubsection{RQ1 - Eficacia de Formalizacao e Prevencao de Over-Editing}
-Os dados empiricos confirmam plenamente a hipotese da RQ1: a arquitetura \texttt{JEV-Cascade} alcancou os maiores indices de conformidade global ao padrao sintatico principal MASTeR, com \textbf{$\text{MASTeR Main } F_1 = 0{,}827$} na familia Gemini e \textbf{$0{,}762$} no \texttt{Qwen3-235B}, superando categoricamente as linhas de base correspondentes.
+\subsubsection{RQ1 --- Eficácia de Formalização e Prevenção de Over-Editing}
+Os resultados confirmam a hipótese da RQ1: a arquitetura \texttt{JEV-Cascade} alcançou os maiores índices de conformidade global ao padrão sintático principal MASTeR, com \textbf{$\text{MASTeR Main } F_1 = 0{,}827$} na família Gemini e \textbf{$0{,}762$} no \texttt{Qwen3-235B}, superando as respectivas linhas de base.
 
-Mais importante ainda, os resultados comprovam a replicacao e solucao definitiva do \textbf{paradoxo de \textit{over-editing}}:
+Os experimentos também evidenciam a ocorrência e a mitigação do \textbf{paradoxo de \textit{over-editing}}:
 \begin{enumerate}
-    \item \textbf{Manifestacao no LLM-Judge:} No modo \texttt{LLM-Judge}, a pontuacao \texttt{BLEU} despencou de $0{,}539$ (no One-Shot) para $0{,}409$, e a conformidade de condicao caiu de $0{,}767$ para $0{,}451$. Juizes generativos nao calibrados emitiram criticas estilisticas subjetivas que forcaram reescritas desnecessarias, distorcendo os requisitos originais;
-    \item \textbf{Comparacao 1:1 Rigorosa sobre o Qwen3-235B:} Ao manter exatamente o mesmo modelo gerador utilizado por Ro\ss kothen et al.~\cite{rosskothen2026converting} (\texttt{qwen/qwen3-235b-a22b-2507}), o \texttt{JEV-Cascade} elevou o \texttt{MasterTemplateF1} de $0{,}553$ (no baseline dos autores) para \textbf{$0{,}762$} (um salto de \textbf{$+37{,}8\%$}), e o \texttt{BLEU} de $0{,}423$ para \textbf{$0{,}544$} (\textbf{$+28{,}6\%$}), como sintetizado na Figura~\ref{fig:master_f1}. Isso demonstra de forma cabal que o ganho pertence a arquitetura de validacao discriminativa tipada, e nao a capacidades intrinsecas do gerador.
+    \item \textbf{Manifestação no LLM-Judge:} No modo \texttt{LLM-Judge}, a pontuação \texttt{BLEU} caiu de $0{,}539$ (no \texttt{One-Shot}) para $0{,}409$, enquanto a conformidade de condição recuou de $0{,}767$ para $0{,}451$. Juízes generativos não calibrados emitiram críticas estilísticas subjetivas que acionaram reescritas desnecessárias e alteraram requisitos inicialmente corretos;
+    \item \textbf{Comparação pareada sobre o Qwen3-235B:} Mantendo o mesmo modelo gerador empregado por Ro\ss kothen et al.~\cite{rosskothen2026converting} (\texttt{qwen/qwen3-235b-a22b-2507}), o \texttt{JEV-Cascade} elevou o \texttt{MasterTemplateF1} de $0{,}553$ (no baseline dos autores) para \textbf{$0{,}762$} (\textbf{$+37{,}8\%$}) e o \texttt{BLEU} de $0{,}423$ para \textbf{$0{,}544$} (\textbf{$+28{,}6\%$}), conforme ilustrado na Figura~\ref{fig:master_f1}. Como o modelo gerador permaneceu fixo, o ganho decorre diretamente da validação discriminativa tipada e do filtro de aceitação rápida (\textit{Fast Accept}).
 \end{enumerate}
 
-\subsubsection{RQ2 - Eficiencia Operacional e Reducao de Latencia}
-Em resposta a RQ2, a substituicao dos validadores generativos em prosa pela inferencia discriminativa paralela System One proporcionou ganhos operacionais notaveis:
+\subsubsection{RQ2 --- Eficiência Operacional e Redução de Latência}
+Em resposta à RQ2, a substituição dos validadores generativos pela inferência discriminativa paralela \textit{System One} reduziu substancialmente o tempo e o custo de validação:
 \begin{itemize}
-    \item \textbf{Latencia de Validacao:} Enquanto o \texttt{LLM-Judge} demandou em media $17.274{,}2\text{ ms}$ ($\sim 17{,}3$ segundos) por requisito inspecionando regras token por token, o \texttt{JEV-Cascade} concluiu a auditoria das 9 primitivas em \textbf{$1.166{,}8\text{ ms}$} no Gemini e \textbf{$1.225{,}8\text{ ms}$} no Qwen3-235B, alcancando uma \textbf{reducao consistente de $93{,}2\%$ no tempo de validacao} (Figura~\ref{fig:val_latency});
-    \item \textbf{Custo Financeiro por Lote:} No \texttt{LLM-Judge}, o custo projetado por 1.000 requisitos atingiu $\$3{,}15$. Com o \texttt{JEV-Cascade}, o custo caiu para \textbf{$\$2{,}71$} no Gemini e apenas \textbf{$\$1{,}76$} no Qwen3-235B. A execucao completa de todos os 249 requisitos no Qwen3-235B consumiu meros $\text{US\$} 0{,}43$ de API.
+    \item \textbf{Latência de Validação:} Enquanto o \texttt{LLM-Judge} demandou em média $17.274{,}2\text{ ms}$ ($\sim 17{,}3\text{ s}$) por requisito decodificando justificativas em texto livre, o \texttt{JEV-Cascade} concluiu a auditoria das nove primitivas em \textbf{$1.166{,}8\text{ ms}$} no Gemini e \textbf{$1.225{,}8\text{ ms}$} no Qwen3-235B, representando uma \textbf{redução de $93{,}2\%$ no tempo de validação} (Figura~\ref{fig:val_latency});
+    \item \textbf{Custo Financeiro por Lote:} No \texttt{LLM-Judge}, o custo projetado para 1.000 requisitos atingiu $\text{US\$ } 3{,}15$. Com o \texttt{JEV-Cascade}, o custo reduziu-se para \textbf{$\text{US\$ } 2{,}71$} no Gemini e \textbf{$\text{US\$ } 1{,}76$} no Qwen3-235B (totalizando $\text{US\$ } 0{,}43$ para processar os 249 requisitos do benchmark).
 \end{itemize}
 
-\subsubsection{RQ3 - Triagem por Incerteza e Escalonamento Calibrado}
-A analise da RQ3 confirmou a capacidade da cascata em isolar a complexidade estrutural. Sobre os 249 requisitos heterogeneos (composto por sistemas criticos espaciais e ferroviarios com fator medio de divisao de $1{,}65$ e sentencas com ate 4 condicionais encadeadas), a taxa de escalonamento para revisao humana situou-se em $87{,}6\%$ no Qwen3-235B e $96{,}8\%$ no Gemini. 
+\subsubsection{RQ3 --- Triagem por Incerteza e Escalonamento Calibrado}
+Na avaliação da RQ3, o roteamento em cascata isolou os casos de maior complexidade estrutural. Sobre os 249 requisitos heterogêneos (incluindo normas espaciais e ferroviárias com fator médio de divisão de $1{,}65$ e sentenças com até quatro condicionais encadeadas), a taxa de escalonamento para revisão humana situou-se em $87{,}6\%$ no Qwen3-235B e $96{,}8\%$ no Gemini.
 
-A zona de incerteza ($\tau_{\text{reject}} \le p_j < \tau_{\text{accept}}$) e a rubrica de qualidade C2 funcionaram como uma barreira protetora: rascunhos com risco de omissao semantica ou quebra de singularidade sao encaminhados para homologacao por engenheiros de requisitos seniores, garantindo a integridade exigida por normas criticas como ISO 26262 e DO-178C.
+A faixa de incerteza epistêmica ($\tau_{\text{rej}} \le p_j < \tau_{\text{acc}}$) combinada à rubrica ordinal atuou como barreira de contenção: rascunhos com risco de omissão semântica ou violação de atomicidade são retidos para revisão por engenheiros de requisitos, preservando a rastreabilidade exigida por normas de segurança funcional como ISO~26262 e DO-178C.
 
 \subsection{Ameaças à Validade}
 Seguindo as diretrizes metodológicas de Runeson e H\"ost~\cite{runeson2009guidelines}, destacamos quatro categorias de ameaças à validade e suas respectivas mitigações:
