@@ -51,6 +51,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--concurrency", type=int, default=4)
     parser.add_argument("--limit", type=int, default=None, help="Limita o número de requisitos (útil para smoke test).")
     parser.add_argument("--output", type=Path, default=None, help="Arquivo JSONL de saída (suporta retomada automática).")
+    parser.add_argument("--max-budget-usd", type=float, default=5.0, help="Trava de segurança: limite de gasto em dólares.")
     return parser.parse_args()
 
 
@@ -73,8 +74,8 @@ async def main_async() -> None:
     args = parse_args()
 
     if args.provider == "gemini":
-        gen_model = args.generator_model or os.environ.get("GEMINI_GENERATOR_MODEL", "gemini-2.5-flash")
-        judge_model = args.judge_model or os.environ.get("GEMINI_JUDGE_MODEL", "gemini-2.5-flash")
+        gen_model = args.generator_model or os.environ.get("GEMINI_GENERATOR_MODEL", "gemini-3.5-flash")
+        judge_model = args.judge_model or os.environ.get("GEMINI_JUDGE_MODEL", "gemini-3.5-flash")
     else:
         gen_model = args.generator_model or os.environ.get(
             "OPENROUTER_GENERATOR_MODEL", "qwen/qwen3-235b-a22b-2507"
@@ -106,48 +107,59 @@ async def main_async() -> None:
 
     sem = asyncio.Semaphore(args.concurrency)
     write_lock = asyncio.Lock()
+    cumulative_cost = 0.0
 
     async def _process_one(idx: int, item: SourceDatasetItem) -> None:
-        async with sem:
-            if args.mode == "oneshot":
-                rec = await run_oneshot_pipeline(
-                    run_id=run_id,
-                    backend=gen_backend,
-                    generator_model=gen_model,
-                    item=item,
-                )
-            elif args.mode == "llm_judge":
-                assert judge_backend is not None
-                rec = await run_llm_judge_pipeline(
-                    run_id=run_id,
-                    generator_backend=gen_backend,
-                    judge_backend=judge_backend,
-                    generator_model=gen_model,
-                    judge_model=judge_model,
-                    item=item,
-                    max_iterations=args.max_iterations,
-                )
-            else:
-                assert jev_validator is not None
-                rec = await run_jev_cascade_pipeline(
-                    run_id=run_id,
-                    generator_backend=gen_backend,
-                    jev_validator=jev_validator,
-                    generator_model=gen_model,
-                    item=item,
-                    max_iterations=args.max_iterations,
-                    tau_accept=args.tau_accept,
-                    tau_reject=args.tau_reject,
-                )
+        nonlocal cumulative_cost
+        if cumulative_cost >= args.max_budget_usd:
+            print(f"[run_experiment] ⚠️ Trava de segurança atingida: gasto (${cumulative_cost:.4f}) >= limite (${args.max_budget_usd:.2f}).")
+            return
+        try:
+            async with sem:
+                if args.mode == "oneshot":
+                    rec = await run_oneshot_pipeline(
+                        run_id=run_id,
+                        backend=gen_backend,
+                        generator_model=gen_model,
+                        item=item,
+                    )
+                elif args.mode == "llm_judge":
+                    assert judge_backend is not None
+                    rec = await run_llm_judge_pipeline(
+                        run_id=run_id,
+                        generator_backend=gen_backend,
+                        judge_backend=judge_backend,
+                        generator_model=gen_model,
+                        judge_model=judge_model,
+                        item=item,
+                        max_iterations=args.max_iterations,
+                    )
+                else:
+                    assert jev_validator is not None
+                    rec = await run_jev_cascade_pipeline(
+                        run_id=run_id,
+                        generator_backend=gen_backend,
+                        jev_validator=jev_validator,
+                        generator_model=gen_model,
+                        item=item,
+                        max_iterations=args.max_iterations,
+                        tau_accept=args.tau_accept,
+                        tau_reject=args.tau_reject,
+                    )
 
-            async with write_lock:
-                with out_path.open("a", encoding="utf-8") as f:
-                    f.write(rec.model_dump_json() + "\n")
-                print(
-                    f"  [{idx}/{len(pending)}] {item.req_name:10s} | "
-                    f"iters={rec.iterations_used} | route={rec.final_cascade_route:8s} | "
-                    f"lat={rec.total_latency_ms:7.1f}ms | cost=${rec.total_cost_usd:.6f}"
-                )
+                async with write_lock:
+                    cumulative_cost += rec.total_cost_usd
+                    with out_path.open("a", encoding="utf-8") as f:
+                        f.write(rec.model_dump_json() + "\n")
+                    print(
+                        f"  [{idx}/{len(pending)}] {item.req_name:10s} | "
+                        f"iters={rec.iterations_used} | route={rec.final_cascade_route:8s} | "
+                        f"lat={rec.total_latency_ms:7.1f}ms | cost=${rec.total_cost_usd:.6f} | "
+                        f"acumulado=${cumulative_cost:.4f}"
+                    )
+                await asyncio.sleep(1.0)
+        except Exception as e:
+            print(f"  [{idx}/{len(pending)}] ❌ ERRO ao processar {item.req_name}: {type(e).__name__}: {e}")
 
     await asyncio.gather(*(_process_one(i, it) for i, it in enumerate(pending, start=1)))
     print(f"[run_experiment] Concluído! Resultados salvos em: {out_path}")

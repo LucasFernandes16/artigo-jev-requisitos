@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 import os
 import time
@@ -82,11 +83,26 @@ class GeminiStructuredBackend:
         )
 
         t0 = time.perf_counter()
-        resp = await self._client.aio.models.generate_content(
-            model=model,
-            contents=contents,
-            config=config,
-        )
+        max_retries = 6
+        base_delay = 2.5
+        resp = None
+        for attempt in range(max_retries):
+            try:
+                resp = await self._client.aio.models.generate_content(
+                    model=model,
+                    contents=contents,
+                    config=config,
+                )
+                break
+            except Exception as err:
+                if attempt == max_retries - 1:
+                    raise
+                delay = base_delay * (1.8 ** attempt)
+                print(
+                    f"[GeminiBackend] Alerta de demanda transitória ({type(err).__name__}). "
+                    f"Aguardando {delay:.1f}s antes da tentativa {attempt + 2}/{max_retries}..."
+                )
+                await asyncio.sleep(delay)
         latency_ms = (time.perf_counter() - t0) * 1000.0
 
         usage = resp.usage_metadata
