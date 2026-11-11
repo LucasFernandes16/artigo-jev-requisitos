@@ -62,7 +62,7 @@ cp .env.example .env
 ```
 
 - `TYPESAFE_API_KEY`: chave oficial da API TypeSafe AI (`jev-latest`).
-- `GEMINI_API_KEY`: chave do Google AI Studio (`gemini-2.5-flash`).
+- `GEMINI_API_KEY`: chave do Google AI Studio (`gemini-3.5-flash`).
 - `OPENROUTER_API_KEY` *(opcional, para replicação 1:1 com `qwen/qwen3-235b-a22b-2507`)*: chave do OpenRouter.
 
 ---
