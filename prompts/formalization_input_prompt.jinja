@@ -1,0 +1,18 @@
+# Input Requirement
+
+The following requirement shall be formalized.
+
+**Name**:
+{{ target_requirement.name | default("", true) }}
+
+**Text**:
+{{ target_requirement.text_content | default("", true) }}
+
+
+# Local hierarchy context (for deciding between 'simple_split' and 'heading')
+Parent requirement:
+Name: {{ target_requirement.name | default("", true) }}
+Text content: [Requirement text content is not set]
+[Requirement has children, which are omitted in this view]
+Sibling requirements (same parent; sibling children omitted):
+None.

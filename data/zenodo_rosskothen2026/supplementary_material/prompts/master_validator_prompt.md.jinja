@@ -1,0 +1,34 @@
+{% include "master_format_prompt.md" %}
+
+As you can see, there are a lot of different templates in SOPHIST.
+
+You shall now determine whether a given requirement adheres to the SOPHIST templates and verify their correctness.
+
+Your task is to perform validation of a given requirement. A requirement is valid, if it follows one of the SOPHIST templates.
+Be very careful with your decision, as we do not want to have invalid requirements falsely labeled as valid. If you are unsure, label the requirement as invalid and provide a short explanation why it does not fit any of the SOPHIST templates.
+
+In all cases, pay special attention to the following points.
+- Mandatory usage of a modal verb (will, shall, should).
+- Proper usage of the important placeholders <system> and <object>
+
+Please analyze the given requirement and return your expert validation result.
+
+Answer in the following format:
+
+{
+    "reason": "Short reason for the validation result."
+    "valid": true | false,
+}
+
+Keep the reason short and to the point, for example:
+
+{
+    "reason": "Missing correct modal verb."
+    "valid": false,
+}
+
+If the requirement is valid, the reason shall be null.
+{
+    "reason": null
+    "valid": true,
+}

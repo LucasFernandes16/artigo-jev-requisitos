@@ -1,0 +1,65 @@
+\section{Abordagem Proposta: JEV-Cascade Reflection Loop}
+
+\subsection{Análise de Gargalos do Ciclo Reflexivo Base}
+Na implementação de referência de Ro\ss kothen et al.~\cite{rosskothen2026converting, rosskothen2026zenodo}, após a geração inicial produzir $k$ requisitos candidatos $R = \{R_1, \dots, R_k\}$ a partir do requisito fonte $S$, cada iteração do ciclo reflexivo executa:
+\begin{enumerate}
+    \item $k$ chamadas ao \textit{Template Validator} (quando reprovado pela gramática), retransmitindo a especificação completa do formato MASTeR;
+    \item $k$ chamadas ao \textit{INCOSE Validator}, gerando notas e comentários textuais para cada uma das 9 categorias (C1--C9) avaliando $R_i$ isoladamente (sem acesso a $S$);
+    \item $1$ chamada ao \textit{Feedback Filter}, que confronta os comentários gerados contra $S$ para descartar exigências impossíveis de cumprir sem alucinação (por exemplo, exigir uma tolerância em milissegundos inexistente no texto original).
+\end{enumerate}
+Portanto, uma única iteração consome até $2k + 1$ chamadas de validação generativa antes mesmo da chamada de reescrita. Para um requisito com fator de divisão $k = 3$ ao longo de duas iterações, o pipeline acumula até $1 + 2 \times (2(3) + 1 + 1) = 17$ invocações autorregressivas completas.
+
+\begin{figure}[t]
+\centering
+\resizebox{\columnwidth}{!}{%
+\begin{tikzpicture}[
+    node distance=0.65cm and 0.6cm,
+    box/.style={rectangle, rounded corners=3pt, draw=black!80, thick, fill=blue!5, align=center, minimum height=0.8cm, font=\footnotesize, inner sep=5pt},
+    jevbox/.style={rectangle, rounded corners=3pt, draw=teal!80!black, thick, fill=teal!8, align=center, minimum height=0.85cm, font=\footnotesize, inner sep=5pt},
+    decision/.style={diamond, aspect=2.1, draw=orange!80!black, thick, fill=orange!10, align=center, font=\scriptsize\bfseries, inner sep=2pt},
+    outaccept/.style={rectangle, rounded corners=3pt, draw=green!60!black, thick, fill=green!10, align=center, font=\scriptsize\bfseries, inner sep=4pt},
+    outesc/.style={rectangle, rounded corners=3pt, draw=red!70!black, thick, fill=red!8, align=center, font=\scriptsize\bfseries, inner sep=4pt},
+    arrow/.style={-{Stealth[length=2.2mm]}, thick, draw=black!75}
+]
+    \node[box] (src) {Requisito Fonte em LN ($S$)};
+    \node[box, below=0.5cm of src] (gen) {\textbf{LLM Gerador} (\textit{Constrained JSON})\\Formalize \& Split: $R = \{R_1, \dots, R_k\}$};
+    \node[jevbox, below=0.55cm of gen] (jev) {\textbf{JEV System One} ($1$ passe paralelo por $R_i$ com estado $(S, R_i)$)\\
+    \texttt{Choice} (Template/Cond.) + $6\times$\texttt{Noul} Acionáveis + \texttt{Score} (C4..C1)};
+    \node[decision, below=0.6cm of jev] (router) {Roteador\\Calibrado};
+
+    \node[outaccept, below left=0.75cm and -0.4cm of router] (accept) {PATH A: Fast Accept\\($\forall p_j \ge \tau_{\text{acc}}$)\\0 chamadas extras};
+    \node[outesc, below right=0.75cm and -0.4cm of router] (escalate) {PATH C: Escalate Humano\\($\tau_{\text{rej}} \le p_j < \tau_{\text{acc}}$ ou iter $=M$)\\Fila de Revisão};
+    \node[box, fill=yellow!12, left=0.65cm of jev, text width=2.5cm] (repair) {\textbf{PATH B: Mapa Determinístico}\\Chave reprovada ($p_j < \tau_{\text{rej}}$) $\rightarrow$ Instrução de reparo};
+
+    \draw[arrow] (src) -- (gen);
+    \draw[arrow] (gen) -- (jev);
+    \draw[arrow] (jev) -- (router);
+    \draw[arrow] (router) -| node[pos=0.25, above, font=\scriptsize] {Aprovado} (accept);
+    \draw[arrow] (router) -| node[pos=0.25, above, font=\scriptsize] {Incerto} (escalate);
+    \draw[arrow] (router.west) -| node[pos=0.22, below, font=\scriptsize] {Violação clara} (repair.south);
+    \draw[arrow] (repair.north) |- (gen.west);
+\end{tikzpicture}%
+}
+\caption{Visão arquitetural do \textit{JEV-Cascade Reflection Loop} proposto, unificando validação sintático-semântica condicionada à fonte e roteamento triplo calibrado.}
+\label{fig:architecture}
+\end{figure}
+
+\subsection{Validação System One Condicionada à Fonte}
+A Figura~\ref{fig:architecture} ilustra o \textit{JEV-Cascade Reflection Loop}. Mantemos inalterados o prompt de sistema MASTeR e o schema estruturado de geração de Ro\ss kothen et al.~\cite{rosskothen2026converting} para preservar estritamente a capacidade generativa e a comparabilidade experimental. Quando a ação escolhida pelo gerador é diferente de \texttt{no\_update}, cada requisito candidato $R_i$ é submetido ao JEV juntamente com o texto fonte original $S$, compondo o estado $\text{state} = (S, R_i)$.
+
+Em uma única requisição paralela \texttt{system\_one}, o JEV avalia nove primitivas tipadas:
+\begin{itemize}
+    \item \textbf{Duas primitivas \texttt{Choice}:} classificam o template principal (\texttt{FunctionMASTeR} nas três variantes, \texttt{PropertyMASTeR}, \texttt{EnvironmentMASTeR}, \texttt{ProcessMASTeR} ou \texttt{NonConforming}) e o sub-template condicional (\texttt{LogicMASTeR}, \texttt{EventMASTeR}, \texttt{TimeMASTeR}, \texttt{No Condition} ou \texttt{InvalidCondition}), fornecendo probabilidades calibradas e confiança;
+    \item \textbf{Seis primitivas \texttt{Noul} estritamente acionáveis:} (1) \texttt{has\_modal\_verb} (presença correta de \textit{shall/should/will}); (2) \texttt{conforms\_to\_master\_syntax} (aderência à ordem de slots e encadeamento condicional); (3) \texttt{is\_singular\_atomic} (ausência de obrigações múltiplas); (4) \texttt{has\_explicit\_actor\_or\_system} (sujeito explícito sem pronomes vagos); (5) \texttt{preserves\_source\_details} (retenção fiel de qualificadores presentes em $S$); e (6) \texttt{no\_hallucinated\_values} (ausência de números ou unidades inventadas fora de $S$);
+    \item \textbf{Uma primitiva \texttt{Score}:} rubrica ordinal de quatro níveis alinhada às categorias práticas C4 a C1 do estudo original ($s \in [0, 3]$).
+\end{itemize}
+
+\textbf{Eliminação por construção do Filtro de Feedback:} Como todas as primitivas \texttt{Noul} observam simultaneamente $S$ e $R_i$ e restringem-se a propriedades gramaticais ou informações presentes em $S$, o validador jamais solicita detalhes ausentes no documento fonte. Assim, cada primitiva $j$ reprovada mapeia deterministicamente por tabela hash para uma instrução concisa de correção, eliminando 100\% das chamadas de LLM do \textit{Feedback Filter} e o custo de geração de comentários livres.
+
+\subsection{Política de Roteamento Triplo Calibrado (Cascade)}
+Sejam $\tau_{\text{rej}}$ e $\tau_{\text{acc}}$ os limiares inferior e superior de probabilidade ($0 < \tau_{\text{rej}} < \tau_{\text{acc}} < 1$, configurados por padrão em $\tau_{\text{rej}} = 0{,}40$ e $\tau_{\text{acc}} = 0{,}75$). Para o conjunto de probabilidades $\{p_1, \dots, p_6\}$ das verificações \texttt{Noul} e o escore ordinal $s$ de um candidato $R_i$, o roteador define três rotas mutuamente exclusivas:
+\begin{enumerate}
+    \item \textbf{Path A --- \textit{Fast Accept}:} Se $\min_j p_j \ge \tau_{\text{acc}}$, os templates classificados não são inválidos e $s \ge 1{,}8$, o requisito é aceito imediatamente sem reescrita, protegendo boas gerações contra \textit{over-editing} e zerando o custo iterativo;
+    \item \textbf{Path B --- \textit{Deterministic Guided Rewrite}:} Se existe ao menos um critério com falha clara ($p_j < \tau_{\text{rej}}$ ou classe \texttt{NonConforming} com alta confiança) e o número de iterações é inferior a $M$, as instruções determinísticas correspondentes às chaves violadas alimentam o próximo turno do LLM gerador;
+    \item \textbf{Path C --- \textit{Uncertainty Escalation}:} Se não há violação clara ($\forall j, p_j \ge \tau_{\text{rej}}$), mas ao menos um critério recai na faixa de incerteza epistêmica ($\tau_{\text{rej}} \le p_j < \tau_{\text{acc}}$) ou as $M$ tentativas de reescrita se esgotam sem atingir \textit{Fast Accept}, o requisito é marcado como \texttt{escalated\_to\_human = True} para revisão prioritária por especialistas.
+\end{enumerate}

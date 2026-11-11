@@ -1,0 +1,26 @@
+\section{Desenho Experimental}
+
+Com o objetivo de avaliar rigorosamente o impacto da validação discriminativa calibrada frente ao paradigma generativo tradicional, estruturamos nossa investigação em torno de três Questões de Pesquisa (RQs):
+\begin{itemize}
+    \item \textbf{RQ1 (Eficácia de Formalização):} \textit{O ciclo reflexivo guiado por JEV preserva ou aprimora a conformidade sintática ao template MASTeR e a fidelidade semântica em relação à geração em passo único (\textit{One-Shot}) e ao loop tradicional com LLM-as-a-Judge?}
+    \item \textbf{RQ2 (Eficiência Operacional e Economia):} \textit{Qual é a redução obtida em latência de validação, volume de tokens gerados e custo financeiro por lote de 1.000 requisitos ao substituir a pilha de validadores generativos pelo JEV?}
+    \item \textbf{RQ3 (Eficácia da Triagem por Complexidade):} \textit{O mecanismo de escalonamento por incerteza do JEV concentra os encaminhamentos humanos nos requisitos de maior complexidade estrutural (fator de divisão $\ge 2$), elevando a qualidade média do subconjunto aceito autonomamente?}
+\end{itemize}
+
+\subsection{Conjunto de Dados}
+Utilizamos integralmente o benchmark público curado por Gro\ss er et al.~\cite{grosser2023comparative, grosser2024benchmarking} e disponibilizado no pacote suplementar de Ro\ss kothen et al.~\cite{rosskothen2026zenodo}. O conjunto compreende \textbf{249 requisitos fonte} em linguagem natural provenientes de cinco especificações heterogêneas: \textit{FLEX} (18 reqs., satélite), \textit{ECSS} (33 reqs., normas espaciais europeias), \textit{CSE} (25 reqs., certificação de motores aeronáuticos, com maior comprimento médio de $40{,}2 \pm 15{,}2$ palavras), \textit{TSS} (63 reqs., especificação técnica ferroviária) e \textit{EVS} (110 reqs., sistema eletrônico de votação, mais curtos e estruturados, com média de $20{,}2 \pm 8{,}3$ palavras). No total, especialistas humanos converteram esses 249 itens em \textbf{410 requisitos MASTeR} de referência (\textit{ground truth}), resultando em fator médio de divisão (\textit{split factor}) de $1{,}65$ ($168$ requisitos com fator $1$, $43$ com fator $2$ e $38$ com fator $3+$).
+
+\subsection{Configurações Avaliadas}
+Para assegurar tanto \textbf{validade interna} (isolamento estrito do mecanismo validador mantendo o gerador constante) quanto \textbf{validade externa} (generalização entre arquiteturas abertas e comerciais), avaliamos três modos de pipeline cruzados sobre duas famílias de modelos geradores (\texttt{Gemini 2.5 Flash} via API oficial Google e \texttt{Qwen3-235B-A22B-Instruct-2507} via API compatível, idêntico ao modelo primário de Ro\ss kothen et al.~\cite{rosskothen2026converting}), totalizando seis configurações experimentais controladas somadas às quatro linhas de base oficiais publicadas pelos autores:
+\begin{enumerate}
+    \item \textbf{\texttt{OneShot}:} Geração estruturada direta sem validadores ($0$ iterações extras), estabelecendo o limite inferior de custo e latência;
+    \item \textbf{\texttt{LLM-Judge}:} Replicação fiel do loop reflexivo da Seção~III de Ro\ss kothen et al.~\cite{rosskothen2026converting} ($M = 3$ iterações máximas, limiar INCOSE de $0{,}7$), contabilizando individualmente tokens e latência do gerador, \textit{Template Validator}, \textit{INCOSE Validator} e \textit{Feedback Filter};
+    \item \textbf{\texttt{JEV-Cascade}:} Pipeline proposto operando com \texttt{jev-latest} via SDK oficial \texttt{typesafe-sdk} ($M = 3$, $\tau_{\text{rej}} = 0{,}40$, $\tau_{\text{acc}} = 0{,}75$).
+\end{enumerate}
+
+\subsection{Métricas de Avaliação}
+\subsubsection{Qualidade Sintática e Semântica}
+Seguindo as descobertas da RQ2 de Ro\ss kothen et al.~\cite{rosskothen2026converting}, adotamos as métricas automáticas com maior correlação frente a especialistas humanos, todas normalizadas em $[0, 1]$: (a) \textbf{\texttt{MasterTemplateF1}} e \textbf{\texttt{MasterConditionF1}}, que calculam o $F_1$ de multiconjuntos entre os sub-templates MASTeR gerados e o \textit{ground truth}; (b) \textbf{\texttt{BLEUScore}} suavizado em nível de sentença; e, complementarmente quando habilitados modelos densos, (c) \textbf{\texttt{BERTScore}}~\cite{zhang2020bertscore} e \textbf{\texttt{EmbeddingMoversDistance} (EMD)}~\cite{kusner2015word}.
+
+\subsubsection{Eficiência Operacional e Calibração}
+Instrumentamos todas as chamadas assíncronas para registrar: (a) \textbf{latência média de validação} (em ms por requisito); (b) \textbf{consumo médio de tokens} de entrada e saída; (c) \textbf{custo estimado por 1.000 requisitos} (em USD); e (d) \textbf{taxas de roteamento} (\textit{Fast Accept Rate}, \textit{Escalation Rate} e o diferencial de qualidade $\Delta F_1$ entre o subconjunto aceito autonomamente e o subconjunto escalado para revisão humana). Para comparações pareadas entre configurações sobre os mesmos 249 requisitos, aplicamos o teste não paramétrico de postos sinalizados de Wilcoxon ($\alpha = 0{,}05$).

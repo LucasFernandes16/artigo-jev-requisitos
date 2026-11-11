@@ -1,0 +1,66 @@
+You are an expert in software requirements engineering. Your task is to evaluate a given requirement based on specific criteria.
+Given the following requirement, evaluate it based on the provided validators and provide a score and feedback for each.
+Make sure to follow the instructions for each validator carefully.
+{#
+The below listed aspects are extracted from the INCOSE Guide to Writing Requirements V4 – Summary Sheet:
+
+COPYRIGHT INFORMATION 
+The Guide to Writing Requirements is an INCOSE Technical Product prepared by the International Council on Systems Engineering (INCOSE). 
+It, as well as this summary, is approved by the INCOSE Technical Operations Leadership for release as an INCOSE Technical Product.
+
+Copyright (c) 2023 by INCOSE, subject to the following restrictions:  
+
+Use. Given this is summary of the Guide for Writing Requirements, permission to reproduce and use this summary is granted, 
+with attribution to INCOSE and the original author(s) where practical, provided this copyright notice is included with all reproductions and derivative works.
+
+Readers of this summary are encouraged to obtain a copy of the full INCOSE Guide to Writing Requirements from the INCOSE store.  
+INCOSE Publications Office, 7670 Opportunity Road, Suite 220 San Diego, CA 92111-2222 US
+
+INCOSE-TP-2010-006-04 | June 2023
+
+https://www.incose.org/wp-content/uploads/legacy/working-groups/requirements-wg/guidetowritingrequirements/incose_rwg_gtwr_v4_summary_sheet.pdf
+Last access: 29.05.2026
+#}
+Please evaluate the following aspects:
+- necessary: The need requirement statement defines capability, characteristic, constraint, or quality factor needed or required to satisfy a lifecycle concept, need, source, or higher-level requirement. 
+- appropriate: The specific intent and amount of detail of the need or requirement statement is appropriate to the level (the level of abstraction, organization, or system architecture) of the entity to which it refers. 
+- unambiguous: Need and requirement statements must be stated such that their intent is clear and can be interpreted in only one way by all intended audiences.
+- complete:The need statement sufficiently describes the necessary capability, characteristic, constraint, conditions, or quality factor to meet the lifecycle concept or source from which it was transformed.  The requirement statement sufficiently describes the necessary capability, characteristic, constraint, conditions, or quality factor to meet the need, source, or higher-level requirement from which it was transformed. 
+- singular: The need or requirement statement should state a single capability, characteristic, constraint, or quality factor. 
+- feasible: The need or requirement can be realized within entity constraints (for example: cost, schedule, technical, legal, ethical, safety) with acceptable risk. 
+- verifiable: The need statement is structured and worded such that its realization can be validated to the approving authority’s satisfaction. The requirement statement is structured and worded such that its realization can be verified to the approving authority’s satisfaction.
+- correct: The need statement must be an accurate representation of the lifecycle concept or source from which it was transformed.  The requirement statement must be an accurate representation of the need, source, or higher-level requirement from which it was transformed. 
+- conforming: Statements and expressions of individual needs and requirements should conform to an approved standard pattern and style guide or standard for writing and managing needs and requirements.   
+
+For each of the aspects, you shall return a feedback comment and a score. The score is used to signify how good the requirement is, according the the specific aspect. It must be a number between 0 and 1, where 0 means the requirement is completely invalid and 1 means it is completely valid.
+
+The feedback comment shall be a short, concise statement with concrete improvement suggestions.
+Use only keywords and avoid unnecessary details.
+Do not comment on a requirement if it is already valid or if there are no concrete suggestions for improvement.
+
+Some examples on the desired output:
+
+```json
+{
+    "Complete": {
+        "comment": null
+        "score": 1.0,
+    },
+    "Unambiguous": {
+        "comment": "Add unit to value."
+        "score": 0.6,
+    },
+    "Singular": {
+        "comment": "Split into two requirements."
+        "score": 0.3,
+    }
+}
+```
+
+Here is the requirement you need to evaluate.
+The type of the requirement is: {{requirement_type}}
+
+The requirement is not heading.
+
+The requirement is as follows:
+{{requirement}}

@@ -1,0 +1,58 @@
+\documentclass[conference]{IEEEtran}
+\IEEEoverridecommandlockouts
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[brazil]{babel}
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{url}
+\usepackage{hyperref}
+\usepackage{tikz}
+\usetikzlibrary{shapes.geometric, arrows.meta, positioning, fit, backgrounds}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=black,
+    citecolor=black,
+    urlcolor=blue
+}
+
+\begin{document}
+
+\title{ Validação Discriminativa Calibrada na Conversão de Requisitos em Linguagem Natural para Templates MASTeR: Uma Abordagem em Cascata com JEV }
+
+\author{
+\IEEEauthorblockN{Lucas F. B. M.}
+\IEEEauthorblockA{\textit{Disciplina de Análise Avançada de Requisitos} \\
+\textit{Departamento de Computação}\\
+Brasil \\
+lucasfbm@exemplo.edu.br}
+}
+
+\maketitle
+
+\begin{abstract}
+\textbf{[Contexto e Motivação]} Templates sintáticos semiformais, como o sistema MASTeR, reduzem ambiguidades e impõem atomicidade a especificações de requisitos em linguagem natural (LN). Recentemente, Ro\ss kothen et al. (IEEE RE 2026) demonstraram que Grandes Modelos de Linguagem (LLMs) inseridos em um ciclo reflexivo (\textit{Reflection Loop}) alcançam qualidade próxima à humana na conversão em lote de requisitos livres para o padrão MASTeR. \textbf{[Questão/Problema]} Contudo, o ciclo reflexivo proposto na literatura apoia-se em validadores generativos (\textit{LLM-as-a-Judge}) e filtros auxiliares que exigem $2k + 1$ chamadas autorregressivas por iteração para $k$ requisitos candidatos. Além de elevar drasticamente o custo financeiro e a latência em projetos industriais, a ausência de probabilidades calibradas provoca edições desnecessárias (\textit{over-editing}) em requisitos simples e falha em sinalizar requisitos complexos que demandam supervisão humana. \textbf{[Ideias Principais e Resultados]} Propomos a arquitetura \textit{JEV-Cascade Reflection Loop}, que substitui os validadores generativos e o filtro de acionabilidade por uma única inferência paralela \textit{System One} utilizando o modelo discriminativo JEV. A abordagem avalia simultaneamente escolhas tipadas de sub-template, \textit{checklists} booleanos condicionados ao requisito fonte e rubricas ordinais com confiança calibrada, roteando cada caso entre aceitação rápida (\textit{Fast Accept}), reescrita determinística (\textit{Guided Rewrite}) ou escalonamento humano (\textit{Escalate}). \textbf{[Contribuição]} Apresentamos a formulação arquitetural do \textit{JEV-Cascade}, a eliminação por construção do estágio de filtragem de feedback por LLM e um pacote experimental reprodutível avaliado sobre o conjunto público de 249 requisitos fonte (410 requisitos MASTeR de referência), contrastando eficácia sintático-semântica, latência, custo por lote e calibração de escalonamento em múltiplas famílias de LLMs geradores.
+\end{abstract}
+
+\begin{IEEEkeywords}
+Engenharia de Requisitos, Templates de Requisitos, MASTeR, Grandes Modelos de Linguagem, LLM-as-a-Judge, Modelos de Decisão System One, JEV.
+\end{IEEEkeywords}
+
+\input{sections/01_introducao}
+\input{sections/02_fundamentacao}
+\input{sections/03_abordagem}
+\input{sections/04_metodologia}
+\input{sections/05_resultados_discussao}
+\input{sections/06_conclusao}
+
+\bibliographystyle{IEEEtran}
+\bibliography{references}
+
+\end{document}

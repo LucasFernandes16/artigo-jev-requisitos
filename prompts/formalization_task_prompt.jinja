@@ -1,0 +1,51 @@
+{% include "master_format_prompt.md" %}
+
+Your concrete task:
+You will be provided with a natural language requirement text, possibly containing multiple atomic requirements. 
+Your task is to convert this text into a list of properly structured requirements in the format described above. 
+Split the input requirement into atomic requirements following the criteria listed below. Each requirement should consist of only one sentence.
+Follow the formalization conventions described above precisely, ensuring clarity, consistency, and conformity to the required format.
+
+Further information for you task:
+You will be given an input requirement and its context. This includes parent requirements, also called headings, and sibling requirements. 
+You should only ever formalize the input requirement, not its parents or siblings.
+Use only the information provided; avoid adding derived, quantified, or domain-specific details unless explicitly stated.
+Never invent missing new numerical values ​​or units of measurement. Never invent numbers to text content. Never invent thresholds if none are specified. Never add numbers, even if they are hinted at in the text. If numbers are missing, add "value" instead.
+The input requirement may contain references to attachments (images, diagrams, etc.). These references are indicated by placeholders in the text, like this: <object-placeholder ref="..." type="..."/>. Additionally the placeholders may be appended either by image data or by textual descriptions of the content, though this is not always the case.
+The input requirement may also contain references to artifact links (i.e. links to other PREEvision artifacts). These references are indicated by placeholders in the text, like this: <artifact-link-placeholder content="..." ref="..." />. The content can be part of the semantic requirement text.
+If the original requirement has a placeholder as part of a sentence, you should also try to include that placeholder as a part of a sentence in the output requirement text. To do this, simply copy the placeholder exactly as is to the correct location in the output requirement text. Do not add any artifact link content, attachment content or attachment description. If any placeholder cannot be meaningfully embedded into the sentence, you shall simply append it at the end of the requirement text without any accompanying sentence or text. 
+Do not create any new placeholders or reference ids. Also, only use the placeholders in the input requirement, never use the placeholders from parents or siblings.
+Each requirement has a name. This name should semantically describe the requirement's content. It should be no longer than 5 words and contain no requirement IDs or any hierarchical information. If possible, when generating a new name avoid enums and any other coding-style object names, e.g. camel or snake case.
+
+Next to the information regarding your input requirement and its context, you will also receive a system summary to provide **background context** for understanding and formalizing the input requirement.
+
+
+
+For the formalization, you can select one of four possible actions. These actions are:
+- "no_update": No update to the input requirement is necessary. The requirement already is in the correct format and has a valid structure. This action is also used when the input requirement is empty.
+- "reformulate": Rephrase the text of the input requirements into a single updated text to adhere to the format and criteria.
+- "simple_split": Split the input requirement into multiple formalized requirements, to ensure that all requirements are singular and independent.
+- "heading": Convert the requirement into a new heading requirement and its child requirements. This action involves creating a new heading under which multiple requirements can be grouped. Use this type if the atomic requirements in the input share a common theme that would benefit from being grouped together, especially in comparison with the sibling requirements.
+You must choose one of the given actions and include it in the output. Note that only one of the actions can be chosen for a given input requirement.
+
+Steps you should take:
+1. Carefully read and understand the natural language requirement and its context.
+2. Identify all atomic requirements.
+3. For each atomic requirement, identify key elements such as systems, actors, conditions, actions, and constraints.
+4. Decide on the correct 'action' for the given requirements, selecting from ["no_update", "reformulate", "simple_split", "heading"].
+5. Re-express each requirement using the templates and style described above and according to the selected action.
+6. Maintain the original meaning and intent while improving structure and clarity.
+7. Make sure you don't invent numbers and units of measurement.
+8. Transfer attachment placeholders where possible, ensuring they fit the content of the formalized requirement.
+
+Output Format:
+The output first contains the chosen "action" which can be one of ["no_update", "reformulate", "simple_split", "heading"].
+Building on this, the output contains a list of all formalized requirements. A requirement in this list consists of the name of the requirement, as specified above, and its text content. Place the update requirements you created in this list.
+In case you selected "heading" as your action, the output must also contain another object "heading" which defines the heading with heading_name, i.e. the name of the heading, and the heading_text, i.e. the textual content of the heading. For all other selected actions, the "heading" output shall be None.
+
+Please note the following **important** points:
+The content of a requirement must adhere to the formalization format as well as the criteria described above.
+Only ever use the information given in the input requirement. If the input requirement is empty or has no information, you must select the action 'no_update'.
+Do NOT add any new information by yourself. NEVER add numbers, values and units.
+Attachment placeholders are directly placed in the content without any further description.
+Return only the output containing the action and the updated requirements, without any additional explanations or context. 

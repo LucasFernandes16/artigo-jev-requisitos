@@ -1,0 +1,62 @@
+\section{Resultados Preliminares, Discussão e Ameaças à Validade}
+
+\subsection{Diagnóstico Empírico das Linhas de Base (Ro\ss kothen et al., 2026)}
+Antes da execução dos ciclos com JEV, reprocessamos os 996 registros oficiais ($249 \times 4$ configurações) disponibilizados por Ro\ss kothen et al.~\cite{rosskothen2026zenodo} para estabelecer a linha de base quantitativa do estudo. A Tabela~\ref{tab:baseline_paper} sintetiza o desempenho global e estratificado pelo fator de divisão humano (\textit{Split Factor} -- SF).
+
+\begin{table}[t]
+\centering
+\caption{Desempenho das Configurações de Referência de Ro\ss kothen et al.~\cite{rosskothen2026zenodo} sobre os 249 Requisitos Fonte}
+\label{tab:baseline_paper}
+\resizebox{\columnwidth}{!}{%
+\begin{tabular}{lcccccc}
+\toprule
+Configuração & \texttt{CorpBERT} $F_1$ & EMD & MASTeR $F_1$ & Cond. $F_1$ & BLEU & Composto \\
+\midrule
+\texttt{minimal-qwen235} (Sem Juiz) & \textbf{0,834} & \textbf{0,770} & 0,561 & \textbf{0,758} & \textbf{0,460} & \textbf{0,811} \\
+\texttt{full-qwen235} (LLM-Judge)   & 0,823          & 0,762          & 0,553 & 0,742          & 0,423          & 0,797 \\
+\texttt{minimal-qwen3-next}         & 0,822          & 0,758          & \textbf{0,592} & 0,725 & 0,412          & 0,801 \\
+\texttt{full-gpt-5} (LLM-Judge)     & 0,787          & 0,725          & 0,569 & 0,656          & 0,273          & 0,753 \\
+\midrule
+\multicolumn{7}{l}{\textit{Degradação em \texttt{full-qwen235} conforme a complexidade estrutural (Split Factor):}} \\
+\quad SF $= 1$ ($n=168$)            & 0,864          & 0,785          & 0,601 & ---            & ---            & --- \\
+\quad SF $= 2$ ($n=43$)             & 0,766          & 0,734          & 0,478 & ---            & ---            & --- \\
+\quad SF $\ge 3$ ($n=38$)           & 0,708          & 0,691          & 0,427 & ---            & ---            & --- \\
+\bottomrule
+\end{tabular}%
+}
+\end{table}
+
+Os dados da Tabela~\ref{tab:baseline_paper} confirmam empiricamente as duas hipóteses motivadoras deste estudo:
+\begin{enumerate}
+    \item \textbf{Evidência de \textit{over-editing} no juiz generativo:} Ao comparar \texttt{minimal-qwen235} com \texttt{full-qwen235}, observa-se que a ativação do loop com juízes LLM generativos reduziu ligeiramente todas as métricas automáticas principais (ex.: escore composto caiu de $0{,}811$ para $0{,}797$), apesar de multiplicar o número de chamadas de inferência. Isso ocorre porque validadores não calibrados emitem críticas estilísticas sobre requisitos simples que já estavam corretos na primeira geração;
+    \item \textbf{Colapso em requisitos multi-atômicos:} Em requisitos compostos com $\text{SF} \ge 3$, o \texttt{MasterTemplateF1} despenca de $0{,}601$ para $0{,}427$ ($-28{,}9\%$), demonstrando a necessidade crítica de um mecanismo calibrado de escalonamento humano (\textit{Path C} da nossa proposta).
+\end{enumerate}
+
+\subsection{Avaliação Comparativa do JEV-Cascade (RQ1--RQ3)}
+A Tabela~\ref{tab:jev_results} consolida os resultados obtidos pelas execuções controladas do repositório experimental (\texttt{OneShot}, \texttt{LLM-Judge} e \texttt{JEV-Cascade}).
+% TODO: Após rodar `scripts/run_experiment.py` e `scripts/evaluate_and_export_latex.py`, os números reais serão injetados automaticamente na tabela abaixo e discutidos nos parágrafos de RQ1, RQ2 e RQ3.
+
+\begin{table}[t]
+\centering
+\caption{Comparação Experimental entre One-Shot, Loop LLM-as-a-Judge e JEV-Cascade ($N = 249$)}
+\label{tab:jev_results}
+\resizebox{\columnwidth}{!}{%
+\input{tables/experimental_results_auto}
+}
+\end{table}
+
+\textbf{Análise esperada e guia de interpretação das RQs:}
+\begin{itemize}
+    \item \textbf{Sobre a RQ1 (Eficácia):} Avalia-se se o \texttt{JEV-Cascade} preserva os altos índices de \texttt{OneShot} nos itens aprovados via \textit{Fast Accept} enquanto recupera falhas gramaticais estritas (ausência de verbo modal ou prefixo condicional incorreto) por meio do mapeamento determinístico de reparo;
+    \item \textbf{Sobre a RQ2 (Economia e Latência):} Diferentemente do modo \texttt{LLM-Judge}, no qual cada candidato aciona geração autorregressiva de comentários e uma etapa adicional de filtragem, cada auditoria JEV executa em um único passe paralelo sem tokens de saída, reduzindo substancialmente a latência acumulada de validação e o custo por milhar de requisitos;
+    \item \textbf{Sobre a RQ3 (Calibração da Cascata):} Compara-se o \texttt{MasterTemplateF1} médio do subconjunto aceito autonomamente contra o subconjunto escalado ($\Delta F_1$), verificando se a zona de incerteza ($\tau_{\text{rej}} \le p_j < \tau_{\text{acc}}$) concentra efetivamente os casos com $\text{SF} \ge 2$.
+\end{itemize}
+
+\subsection{Ameaças à Validade}
+Seguindo as diretrizes metodológicas de Runeson e H\"ost~\cite{runeson2009guidelines}, destacamos quatro categorias de ameaças à validade e suas respectivas mitigações:
+\begin{itemize}
+    \item \textbf{Validade de Construto:} As métricas automáticas comparam as formalizações geradas contra uma única reescrita humana de referência~\cite{grosser2023comparative}. Como demonstrado por Ro\ss kothen et al.~\cite{rosskothen2026converting}, existem múltiplas maneiras válidas de decompor requisitos complexos no padrão MASTeR. Mitigamos essa ameaça combinando métricas estruturais de multiconjunto (\texttt{MasterTemplateF1}) com métricas léxico-semânticas e analisando separadamente os estratos de complexidade;
+    \item \textbf{Validade Interna:} Alterar simultaneamente o LLM gerador e o mecanismo validador impediria isolar a contribuição do JEV. Mitigamos esse risco preservando integralmente os prompts Jinja2 originais~\cite{rosskothen2026zenodo} e executando os três modos (\texttt{OneShot}, \texttt{LLM-Judge} e \texttt{JEV-Cascade}) dentro da mesma família de gerador (\texttt{Gemini 2.5 Flash}), além de suportar execução direta com \texttt{Qwen3-235B};
+    \item \textbf{Validade Externa:} O estudo concentra-se no sistema de templates MASTeR sobre 249 requisitos de cinco projetos (predominantemente sistemas críticos e embarcados). Embora representativo de cenários industriais como PREEvision, a generalização para outros padrões semiformais (como EARS) ou requisitos ágeis (\textit{User Stories}) requer investigação adicional;
+    \item \textbf{Confiabilidade:} Modelos em nuvem podem sofrer variações de latência de rede e atualizações de versão. Para garantir reprodutibilidade estrita, fixamos temperatura igual a zero ($T = 0{,}0$) com decodificação estruturada, persistimos telemetria individual por chamada em arquivos JSONL e disponibilizamos todo o pipeline de avaliação e testes automatizados.
+\end{itemize}
