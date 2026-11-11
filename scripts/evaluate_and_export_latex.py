@@ -121,11 +121,35 @@ def main() -> None:
         "Configuração & MASTeR Main $F_1$ & Cond. $F_1$ & BLEU & Lat. Val. (ms) & Custo/1k (\\$) & Escalon. (\\%) \\\\",
         "\\midrule",
     ]
-    for _, r in df.iterrows():
-        name_esc = str(r["run_id"]).replace("_", "\\_")
+
+    def format_row_label(row: pd.Series) -> tuple[str, int]:
+        mode = str(row["mode"])
+        provider = str(row["provider"])
+        if mode == "oneshot":
+            return "\\texttt{One-Shot (Gemini 3.5 Flash)}", 0
+        if mode == "llm_judge":
+            return "\\texttt{LLM-Judge (Gemini 3.5 Flash)}", 1
+        if mode == "jev_cascade" and provider == "gemini":
+            return "\\textbf{\\texttt{JEV-Cascade (Gemini 3.5 Flash)}}", 2
+        if mode == "jev_cascade" and provider == "openrouter":
+            return "\\textbf{\\texttt{JEV-Cascade (Qwen3-235B)}}", 3
+        return str(row["run_id"]).replace("_", "\\_"), 4
+
+    labels_orders = [format_row_label(r) for _, r in df.iterrows()]
+    df["display_name"] = [lo[0] for lo in labels_orders]
+    df["sort_order"] = [lo[1] for lo in labels_orders]
+    df_sorted = df.sort_values("sort_order")
+
+    for _, r in df_sorted.iterrows():
+        display_name = r["display_name"]
+        is_jev = (r["mode"] == "jev_cascade")
+        f1_str = f"\\textbf{{{r['MasterTemplateF1']:.3f}}}" if is_jev else f"{r['MasterTemplateF1']:.3f}"
+        bleu_str = f"\\textbf{{{r['BLEUScore']:.3f}}}" if is_jev else f"{r['BLEUScore']:.3f}"
+        lat_str = f"\\textbf{{{r['mean_validation_latency_ms']:.1f}}}" if is_jev else f"{r['mean_validation_latency_ms']:.1f}"
+
         lines.append(
-            f"{name_esc} & {r['MasterTemplateF1']:.3f} & {r['MasterConditionF1']:.3f} & "
-            f"{r['BLEUScore']:.3f} & {r['mean_validation_latency_ms']:.1f} & "
+            f"{display_name} & {f1_str} & {r['MasterConditionF1']:.3f} & "
+            f"{bleu_str} & {lat_str} & "
             f"{r['cost_per_1000_reqs_usd']:.2f} & {r['escalation_rate'] * 100.0:.1f}\\% \\\\"
         )
     lines.extend(["\\bottomrule", "\\end{tabular}"])
